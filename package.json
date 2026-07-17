@@ -1,0 +1,67 @@
+{
+  "name": "id-browser",
+  "displayName": "ID Browser",
+  "description": "Pattern-match identifiers in code and Ctrl+Click to view related web content",
+  "version": "0.1.0",
+  "engines": { "vscode": "^1.85.0" },
+  "categories": ["Other"],
+  "activationEvents": ["onStartupFinished"],
+  "main": "./out/extension.js",
+  "contributes": {
+    "configuration": {
+      "title": "ID Browser",
+      "properties": {
+        "idBrowser.patterns": {
+          "type": "array",
+          "description": "List of identifier patterns and the URL template to open for each match.",
+          "default": [
+            {
+              "name": "Default",
+              "regex": "\\bMY_REQ_[0-9]{4,}\\b",
+              "urlTemplate": "https://www.duckduckgo.com/?q=${id}"
+            }
+          ],
+          "items": {
+            "type": "object",
+            "required": ["regex", "urlTemplate"],
+            "properties": {
+              "name": {
+                "type": "string",
+                "description": "Friendly name for this pattern (optional)."
+              },
+              "regex": {
+                "type": "string",
+                "description": "Regular expression (no delimiters) that matches the identifier. Use a capture group named 'id' if you want to substitute only part of the match; otherwise the whole match is used."
+              },
+              "urlTemplate": {
+                "type": "string",
+                "description": "URL template. ${id} is replaced with the matched identifier."
+              }
+            }
+          }
+        },
+        "idBrowser.openIn": {
+          "type": "string",
+          "enum": ["webview", "externalBrowser"],
+          "default": "webview",
+          "description": "Where to open the resolved URL."
+        }
+      }
+    },
+    "commands": [
+      {
+        "command": "idBrowser.configure",
+        "title": "ID Browser: Configure Patterns"
+      }
+    ]
+  },
+  "scripts": {
+    "vscode:prepublish": "tsc -p .",
+    "compile": "tsc -p ."
+  },
+  "devDependencies": {
+    "@types/vscode": "^1.85.0",
+    "@types/node": "^20.0.0",
+    "typescript": "^5.4.0"
+  }
+}
