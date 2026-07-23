@@ -71,12 +71,20 @@ async function openInWebview(url: string, id: string, context: vscode.ExtensionC
   const isFile = uri.scheme === 'file';
 
   if (!panel) {
-    panel = vscode.window.createWebviewPanel(
+      panel = vscode.window.createWebviewPanel(
       'idBrowser',
       `ID Browser: ${id}`,
       vscode.ViewColumn.Beside,
       { enableScripts: true, retainContextWhenHidden: true }
     );
+
+    panel.webview.onDidReceiveMessage(message => {
+      if (message?.type === 'openExternal' && message.url) {
+        console.log("Trying to externally open:" + message.url)
+        vscode.env.openExternal(vscode.Uri.parse(message.url, true));
+      }
+    });
+
     panel.onDidDispose(() => {
       panel = undefined;
     });
@@ -118,22 +126,28 @@ async function openInWebview(url: string, id: string, context: vscode.ExtensionC
 }
 
 function wrapIframe(url: string): string {
-  // Note: many sites send X-Frame-Options/CSP headers that block iframe embedding.
-  // In that case, fall back to "Open in external browser" from the panel.
   return `<!DOCTYPE html>
   <html>
   <head>
     <meta charset="UTF-8">
+    <meta http-equiv="Content-Security-Policy"
+      content="default-src 'none'; frame-src https: http:; script-src 'unsafe-inline'; style-src 'unsafe-inline';">
     <style>
       html, body { margin: 0; padding: 0; height: 100%; }
-      iframe { border: 0; width: 100%; height: 100vh; }
+      iframe { border: 0; width: 100%; height: calc(100vh - 32px); }
       .bar { padding: 6px 10px; font-family: sans-serif; font-size: 12px; background: #2d2d2d; color: #ccc; }
-      a { color: #4daafc; }
+      a { color: #4daafc; cursor: pointer; }
     </style>
   </head>
   <body>
-    <div class="bar">${url}</div>
+    <div class="bar">${url} — <a id="openExternal">Open in external browser</a></div>
     <iframe src="${url}"></iframe>
+    <script>
+      const vscode = acquireVsCodeApi();
+      document.getElementById('openExternal').addEventListener('click', () => {
+        vscode.postMessage({ type: 'openExternal', url: ${JSON.stringify(url)} });
+      });
+    </script>
   </body>
   </html>`;
 }
